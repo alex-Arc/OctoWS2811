@@ -92,7 +92,7 @@ void OctoWS2811::begin(void)
 	pinMode(21, OUTPUT);	// strip #7
 	pinMode(5, OUTPUT);	// strip #8
 
-	// create the two waveforms for WS2811 low and high bits
+//set frequency and the frame set delay depending on the chosen chip
   switch (params & 0xF0) {
     case WS2811_400kHz: {
       frequency = 400000;
@@ -111,6 +111,7 @@ void OctoWS2811::begin(void)
       frameSetDelay = 50;
     break; }
   }
+  // create the two waveforms for WS2811 low and high bits
 	analogWriteResolution(8);
 	analogWriteFrequency(3, frequency);
 	analogWriteFrequency(4, frequency);
