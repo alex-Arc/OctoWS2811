@@ -275,7 +275,7 @@ void OctoWS2811::show(void)
 	dma1.clearComplete();
 	dma2.clearComplete();
 	dma3.clearComplete();
-	uint32_t bufsize = stripLen*24;
+	uint32_t bufsize = stripLen*24;    //don't know if i should change this to 32 if it is a 4 channel chip
 	dma1.transferCount(bufsize);
 	dma2.transferCount(bufsize);
 	dma3.transferCount(bufsize);
@@ -302,7 +302,7 @@ void OctoWS2811::show(void)
 	//Serial1.print("4");
 }
 
-void OctoWS2811::setPixel(uint32_t num, int color)
+void OctoWS2811::setPixel(uint32_t num, uint32_t color)
 {
 	uint32_t strip, offset, mask;
 	uint8_t bit, *p;
@@ -317,20 +317,44 @@ void OctoWS2811::setPixel(uint32_t num, int color)
 	  case WS2811_GBR:
 		color = ((color<<8)&0xFFFF00) | ((color>>16)&0x0000FF);
 		break;
+    case WS2811_RBGW:
+		color = (color&0xFF0000FF) | ((color<<8)&0x00FF0000) | ((color>>8)&0x0000FF00);
+		break;
+	  case WS2811_GRBW:
+		color = ((color<<8)&0xFF000000) | ((color>>8)&0x00FF0000) | (color&0x0000FFFF);
+		break;
+	  case WS2811_GBRW:
+		color = ((color<<8)&0xFFFF0000) | ((color>>16)&0x0000FF00) | (color&0x000000FF);
+		break;
 	  default:
 		break;
 	}
-	strip = num / stripLen;  // Cortex-M4 has 2 cycle unsigned divide :-)
-	offset = num % stripLen;
-	bit = (1<<strip);
-	p = ((uint8_t *)drawBuffer) + offset * 24;
-	for (mask = (1<<23) ; mask ; mask >>= 1) {
-		if (color & mask) {
-			*p++ |= bit;
-		} else {
-			*p++ &= ~bit;
-		}
-	}
+  if (params & 7 < 3) {
+  	strip = num / stripLen;  // Cortex-M4 has 2 cycle unsigned divide :-)
+  	offset = num % stripLen;
+  	bit = (1<<strip);
+  	p = ((uint8_t *)drawBuffer) + offset * 24;
+  	for (mask = (1<<23) ; mask ; mask >>= 1) {
+  		if (color & mask) {
+  			*p++ |= bit;
+  		} else {
+  			*p++ &= ~bit;
+  		}
+  	}
+  }else{
+    strip = num / stripLen;  // Cortex-M4 has 2 cycle unsigned divide :-)
+  	offset = num % stripLen;
+  	bit = (1<<strip);
+  	p = ((uint8_t *)drawBuffer) + offset * 32;
+  	for (mask = (1<<31) ; mask ; mask >>= 1) {
+  		if (color & mask) {
+  			*p++ |= bit;
+  		} else {
+  			*p++ &= ~bit;
+  		}
+  	}
+  }
+
 }
 
 int OctoWS2811::getPixel(uint32_t num)
@@ -339,13 +363,23 @@ int OctoWS2811::getPixel(uint32_t num)
 	uint8_t bit, *p;
 	int color=0;
 
-	strip = num / stripLen;
-	offset = num % stripLen;
-	bit = (1<<strip);
-	p = ((uint8_t *)drawBuffer) + offset * 24;
-	for (mask = (1<<23) ; mask ; mask >>= 1) {
-		if (*p++ & bit) color |= mask;
-	}
+  if (params & 7 < 3) {
+  	strip = num / stripLen;
+  	offset = num % stripLen;
+  	bit = (1<<strip);
+  	p = ((uint8_t *)drawBuffer) + offset * 24;
+  	for (mask = (1<<23) ; mask ; mask >>= 1) {
+  		if (*p++ & bit) color |= mask;
+  	}
+  }else{
+    strip = num / stripLen;
+  	offset = num % stripLen;
+  	bit = (1<<strip);
+  	p = ((uint8_t *)drawBuffer) + offset * 32;
+  	for (mask = (1<<31) ; mask ; mask >>= 1) {
+  		if (*p++ & bit) color |= mask;
+  	}
+  }
 	switch (params & 7) {
 	  case WS2811_RBG:
 		color = (color&0xFF0000) | ((color<<8)&0x00FF00) | ((color>>8)&0x0000FF);
@@ -355,6 +389,15 @@ int OctoWS2811::getPixel(uint32_t num)
 		break;
 	  case WS2811_GBR:
 		color = ((color<<8)&0xFFFF00) | ((color>>16)&0x0000FF);
+		break;
+    case WS2811_RBGW:
+		color = (color&0xFF0000FF) | ((color<<8)&0x00FF0000) | ((color>>8)&0x0000FF00);
+		break;
+	  case WS2811_GRBW:
+		color = ((color<<8)&0xFF000000) | ((color>>8)&0x00FF0000) | (color&0x0000FFFF);
+		break;
+	  case WS2811_GBRW:
+		color = ((color<<8)&0xFFFF0000) | ((color>>16)&0x0000FF00) | (color&0x000000FF);
 		break;
 	  default:
 		break;

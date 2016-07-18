@@ -37,7 +37,9 @@
 #define WS2811_RGB	0	// The WS2811 datasheet documents this way
 #define WS2811_RBG	1
 #define WS2811_GRB	2	// Most LED strips are wired this way
-#define WS2811_GBR	3
+#define WS2811_RGBW	3
+#define WS2811_RBGW	4
+#define WS2811_GBRW	5
 
 #define WS2811_800kHz 0x00	// Nearly all WS2811 are 800 kHz
 #define WS2811_400kHz 0x10	// Adafruit's Flora Pixels
@@ -49,9 +51,13 @@ public:
 	OctoWS2811(uint32_t numPerStrip, void *frameBuf, void *drawBuf, uint8_t config = WS2811_GRB);
 	void begin(void);
 
-	void setPixel(uint32_t num, int color);
+	void setPixel(uint32_t num, uint32_t color);
 	void setPixel(uint32_t num, uint8_t red, uint8_t green, uint8_t blue) {
 		setPixel(num, color(red, green, blue));
+	}
+  void setPixel(uint32_t num, uint32_t color);
+	void setPixel(uint32_t num, uint8_t red, uint8_t green, uint8_t blue, uint8_t white) {
+		setPixel(num, color(red, green, blue, white));
 	}
 	int getPixel(uint32_t num);
 
@@ -63,6 +69,10 @@ public:
 	}
 	int color(uint8_t red, uint8_t green, uint8_t blue) {
 		return (red << 16) | (green << 8) | blue;
+	}
+
+  int color(uint8_t red, uint8_t green, uint8_t blue, uint8_t white) {
+		return (red << 24) | (green << 16) | (blue << 8) | white;
 	}
 
 
