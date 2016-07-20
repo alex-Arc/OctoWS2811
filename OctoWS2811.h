@@ -24,6 +24,10 @@
 #ifndef OctoWS2811_h
 #define OctoWS2811_h
 
+#ifndef OctoWS2811Version
+#define OctoWS2811Version 100020002
+#endif
+
 #include <Arduino.h>
 #include "DMAChannel.h"
 
