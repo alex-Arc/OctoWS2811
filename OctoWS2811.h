@@ -42,9 +42,11 @@
 #define WS2811_RGB	0	// The WS2811 datasheet documents this way
 #define WS2811_RBG	1
 #define WS2811_GRB	2	// Most LED strips are wired this way
-#define WS2811_RGBW	3
-#define WS2811_RBGW	4
-#define WS2811_GBRW	5
+#define WS2811_GBR  3
+#define WS2811_RGBW	4
+#define WS2811_RBGW	5
+#define WS2811_GRBW	6
+#define WS2811_GBRW	7
 
 #define WS2811_800kHz 0x00	// Nearly all WS2811 are 800 kHz
 #define WS2811_400kHz 0x10	// Adafruit's Flora Pixels
