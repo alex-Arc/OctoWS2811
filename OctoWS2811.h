@@ -62,10 +62,11 @@ public:
 	void setPixel(uint32_t num, uint8_t red, uint8_t green, uint8_t blue) {
 		setPixel(num, color(red, green, blue));
 	}
-  void setPixel(uint32_t num, uint32_t color);
+
 	void setPixel(uint32_t num, uint8_t red, uint8_t green, uint8_t blue, uint8_t white) {
-		setPixel(num, color(red, green, blue, white));
+    setPixel(num, color(red, green, blue, white));
 	}
+
 	int getPixel(uint32_t num);
 
 	void show(void);
