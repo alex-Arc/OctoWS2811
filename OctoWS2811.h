@@ -25,7 +25,8 @@
 #define OctoWS2811_h
 
 #ifndef OctoWS2811Version
-#define OctoWS2811Version 100020002
+#define OctoWS2811Version 100020001
+#define octo_has_4_channel  // remove when next version commes
 #endif
 
 #include <Arduino.h>
