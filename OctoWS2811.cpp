@@ -71,8 +71,13 @@ OctoWS2811::OctoWS2811(uint32_t numPerStrip, void *frameBuf, void *drawBuf, uint
 void OctoWS2811::begin(void)
 {
 	uint32_t bufsize, frequency;
-	bufsize = stripLen*24;
+  if ((params & 0xF) < 4) {
+    oneLEDbufferSize = 24;
+  }else{
+    oneLEDbufferSize = 32;
+  }
 
+  bufsize = stripLen*oneLEDbufferSize;
 	// set up the buffers
 	memset(frameBuffer, 0, bufsize);
 	if (drawBuffer) {
@@ -104,6 +109,10 @@ void OctoWS2811::begin(void)
     break; }
     case WS2813_800kHz: {
       frequency = 800000;
+      frameSetDelay = 300;
+    break; }
+    case SK6812_820kHz: {
+      frequency = 820000;
       frameSetDelay = 300;
     break; }
     default: {
@@ -226,7 +235,7 @@ void OctoWS2811::show(void)
 	if (drawBuffer != frameBuffer) {
 		// TODO: this could be faster with DMA, especially if the
 		// buffers are 32 bit aligned... but does it matter?
-		memcpy(frameBuffer, drawBuffer, stripLen * 24);
+		memcpy(frameBuffer, drawBuffer, stripLen * oneLEDbufferSize);
 	}
 	// wait for WS2811 reset
 	while (micros() - update_completed_at < frameSetDelay) ;
@@ -275,7 +284,7 @@ void OctoWS2811::show(void)
 	dma1.clearComplete();
 	dma2.clearComplete();
 	dma3.clearComplete();
-	uint32_t bufsize = stripLen*24;    //don't know if i should change this to 32 if it is a 4 channel chip
+	uint32_t bufsize = stripLen*oneLEDbufferSize;    //don't know if i should change this to 32 if it is a 4 channel chip
 	dma1.transferCount(bufsize);
 	dma2.transferCount(bufsize);
 	dma3.transferCount(bufsize);
@@ -307,7 +316,7 @@ void OctoWS2811::setPixel(uint32_t num, uint32_t color)
 	uint32_t strip, offset, mask;
 	uint8_t bit, *p;
 
-	switch (params & 7) {
+	switch (params & 0xF) {
 	  case WS2811_RBG:
 		color = (color&0xFF0000) | ((color<<8)&0x00FF00) | ((color>>8)&0x0000FF);
 		break;
@@ -329,7 +338,7 @@ void OctoWS2811::setPixel(uint32_t num, uint32_t color)
 	  default:
 		break;
 	}
-  if ((params & 7) < 3) {
+  if ((params & 0xF) < 4) {
   	strip = num / stripLen;  // Cortex-M4 has 2 cycle unsigned divide :-)
   	offset = num % stripLen;
   	bit = (1<<strip);
@@ -363,7 +372,7 @@ int OctoWS2811::getPixel(uint32_t num)
 	uint8_t bit, *p;
 	int color=0;
 
-  if ((params & 7) < 3) {
+  if ((params & 0xF) < 4) {
   	strip = num / stripLen;
   	offset = num % stripLen;
   	bit = (1<<strip);
@@ -380,7 +389,7 @@ int OctoWS2811::getPixel(uint32_t num)
   		if (*p++ & bit) color |= mask;
   	}
   }
-	switch (params & 7) {
+	switch (params & 0xF) {
 	  case WS2811_RBG:
 		color = (color&0xFF0000) | ((color<<8)&0x00FF00) | ((color>>8)&0x0000FF);
 		break;
