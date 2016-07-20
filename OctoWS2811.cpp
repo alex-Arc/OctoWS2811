@@ -329,7 +329,7 @@ void OctoWS2811::setPixel(uint32_t num, uint32_t color)
 	  default:
 		break;
 	}
-  if (params & 7 < 3) {
+  if ((params & 7) < 3) {
   	strip = num / stripLen;  // Cortex-M4 has 2 cycle unsigned divide :-)
   	offset = num % stripLen;
   	bit = (1<<strip);
@@ -363,7 +363,7 @@ int OctoWS2811::getPixel(uint32_t num)
 	uint8_t bit, *p;
 	int color=0;
 
-  if (params & 7 < 3) {
+  if ((params & 7) < 3) {
   	strip = num / stripLen;
   	offset = num % stripLen;
   	bit = (1<<strip);
