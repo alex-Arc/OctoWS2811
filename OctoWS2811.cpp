@@ -28,6 +28,8 @@
 
 
 uint16_t OctoWS2811::stripLen;
+uint8_t OctoWS2811::ledBits;
+uint8_t OctoWS2811::ledBitsOneLess;
 void * OctoWS2811::frameBuffer;
 void * OctoWS2811::drawBuffer;
 uint8_t OctoWS2811::params;
@@ -70,8 +72,33 @@ OctoWS2811::OctoWS2811(uint32_t numPerStrip, void *frameBuf, void *drawBuf, uint
 
 void OctoWS2811::begin(void)
 {
-	uint32_t bufsize, frequency;
-	bufsize = stripLen*24;
+  uint32_t bufsize, frequency;
+  // create the two waveforms for WS2811 low and high bits
+	switch (params & 0xF0) {
+	case WS2811_400kHz:
+		frequency = 400000;
+		break;
+	case WS2811_800kHz:
+		frequency = 800000;
+		break;
+	case WS2813_800kHz:
+		frequency = 800000;
+		break;
+  case SK6812_800kHz:
+		frequency = 800000;
+		break;
+	default:
+		frequency = 800000;
+	}
+
+  if((params & 0x0F) > 5) {
+    ledBits = 32;
+  }else {
+    ledBits = 24;
+  }
+
+  ledBitsOneLess = ledBits-1;
+	bufsize = stripLen*ledBits;
 
 	// set up the buffers
 	memset(frameBuffer, 0, bufsize);
@@ -91,21 +118,6 @@ void OctoWS2811::begin(void)
 	pinMode(20, OUTPUT);	// strip #6
 	pinMode(21, OUTPUT);	// strip #7
 	pinMode(5, OUTPUT);	// strip #8
-
-	// create the two waveforms for WS2811 low and high bits
-	switch (params & 0xF0) {
-	case WS2811_400kHz:
-		frequency = 400000;
-		break;
-	case WS2811_800kHz:
-		frequency = 800000;
-		break;
-	case WS2813_800kHz:
-		frequency = 800000;
-		break;
-	default:
-		frequency = 800000;
-	}
 
 
 #if defined(__MK20DX128__)
@@ -250,7 +262,7 @@ void OctoWS2811::show(void)
 	if (drawBuffer != frameBuffer) {
 		// TODO: this could be faster with DMA, especially if the
 		// buffers are 32 bit aligned... but does it matter?
-		memcpy(frameBuffer, drawBuffer, stripLen * 24);
+		memcpy(frameBuffer, drawBuffer, stripLen * ledBits);
 	}
 	// wait for WS2811 reset
 	while (micros() - update_completed_at < 300) ;
@@ -350,7 +362,7 @@ void OctoWS2811::show(void)
 	dma1.clearComplete();
 	dma2.clearComplete();
 	dma3.clearComplete();
-	uint32_t bufsize = stripLen*24;
+	uint32_t bufsize = stripLen*ledBits;
 	dma1.transferCount(bufsize);
 	dma2.transferCount(bufsize);
 	dma3.transferCount(bufsize);
@@ -399,8 +411,8 @@ void OctoWS2811::setPixel(uint32_t num, int color)
 	strip = num / stripLen;  // Cortex-M4 has 2 cycle unsigned divide :-)
 	offset = num % stripLen;
 	bit = (1<<strip);
-	p = ((uint8_t *)drawBuffer) + offset * 24;
-	for (mask = (1<<23) ; mask ; mask >>= 1) {
+	p = ((uint8_t *)drawBuffer) + offset * ledBits;
+	for (mask = (1<<ledBitsOneLess) ; mask ; mask >>= 1) {
 		if (color & mask) {
 			*p++ |= bit;
 		} else {
@@ -418,8 +430,8 @@ int OctoWS2811::getPixel(uint32_t num)
 	strip = num / stripLen;
 	offset = num % stripLen;
 	bit = (1<<strip);
-	p = ((uint8_t *)drawBuffer) + offset * 24;
-	for (mask = (1<<23) ; mask ; mask >>= 1) {
+	p = ((uint8_t *)drawBuffer) + offset * ledBits;
+	for (mask = (1<<ledBitsOneLess) ; mask ; mask >>= 1) {
 		if (*p++ & bit) color |= mask;
 	}
 	switch (params & 7) {
