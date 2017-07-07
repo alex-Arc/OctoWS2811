@@ -50,12 +50,14 @@ OctoWS2811::OctoWS2811(uint32_t numPerStrip, void *frameBuf, void *drawBuf, uint
 }
 
 void OctoWS2811::setLength(uint32_t numPerStrip) {
+  //check to make shure begin has not run
   if (beginState == false) {
     stripLen = numPerStrip;
   }
 }
 
 void OctoWS2811::setType(uint8_t config) {
+  //check to make shure begin has not run
   if (beginState == false) {
     params = config;
   }
