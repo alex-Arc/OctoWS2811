@@ -51,6 +51,10 @@
 class OctoWS2811 {
 public:
 	OctoWS2811(uint32_t numPerStrip, void *frameBuf, void *drawBuf, uint8_t config = WS2811_GRB);
+
+  void setLength(uint32_t numPerStrip);
+  void setType(uint8_t config);
+
 	void begin(void);
 
 	void setPixel(uint32_t num, int color);
@@ -86,6 +90,7 @@ private:
 	static uint8_t params;
 	static DMAChannel dma1, dma2, dma3;
 	static void isr(void);
+  static bool beginState;
 };
 
 #endif

@@ -26,7 +26,7 @@
 #include <string.h>
 #include "OctoWS2811.h"
 
-
+bool OctoWS2811::beginState = false;
 uint16_t OctoWS2811::stripLen;
 uint8_t OctoWS2811::ledBits;
 uint8_t OctoWS2811::ledBitsOneLess;
@@ -44,9 +44,21 @@ static uint32_t update_completed_at = 0;
 OctoWS2811::OctoWS2811(uint32_t numPerStrip, void *frameBuf, void *drawBuf, uint8_t config)
 {
 	stripLen = numPerStrip;
-	frameBuffer = frameBuf;
+  params = config;
+  frameBuffer = frameBuf;
 	drawBuffer = drawBuf;
-	params = config;
+}
+
+void OctoWS2811::setLength(uint32_t numPerStrip) {
+  if (beginState == false) {
+    stripLen = numPerStrip;
+  }
+}
+
+void OctoWS2811::setType(uint8_t config) {
+  if (beginState == false) {
+    params = config;
+  }
 }
 
 // Waveform timing: these set the high time for a 0 and 1 bit, as a fraction of
@@ -72,6 +84,7 @@ OctoWS2811::OctoWS2811(uint32_t numPerStrip, void *frameBuf, void *drawBuf, uint
 
 void OctoWS2811::begin(void)
 {
+  beginState = true;
   uint32_t bufsize, frequency;
   // create the two waveforms for WS2811 low and high bits
 	switch (params & 0xF0) {
