@@ -99,8 +99,8 @@ void OctoWS2811::begin(void)
 	case WS2813_800kHz:
 		frequency = 800000;
 		break;
-  case SK6812_800kHz:
-		frequency = 800000;
+  case SK6812_820kHz:
+		frequency = 820000;
 		break;
 	default:
 		frequency = 800000;

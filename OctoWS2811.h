@@ -45,7 +45,7 @@
 #define WS2811_800kHz 0x00	// Nearly all WS2811 are 800 kHz
 #define WS2811_400kHz 0x10	// Adafruit's Flora Pixels
 #define WS2813_800kHz 0x20	// WS2813 are close to 800 kHz but has 300 us frame set delay
-#define SK6812_800kHz 0x30	// WS2813 are close to 800 kHz but has 300 us frame set delay
+#define SK6812_820kHz 0x30	// WS2813 are close to 800 kHz but has 300 us frame set delay
 
 
 class OctoWS2811 {
