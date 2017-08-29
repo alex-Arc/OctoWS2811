@@ -61,7 +61,11 @@ public:
 	int busy(void);
 
 	int numPixels(void) {
+    #if defined(__MK20DX128__)
 		return stripLen * 8;
+    #else
+    return stripLen * 12;
+    #endif
 	}
 	int color(uint8_t red, uint8_t green, uint8_t blue) {
 		return (red << 16) | (green << 8) | blue;
