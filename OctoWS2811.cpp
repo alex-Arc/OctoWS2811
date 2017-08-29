@@ -36,8 +36,12 @@ uint8_t OctoWS2811::params;
 DMAChannel OctoWS2811::dma1;
 DMAChannel OctoWS2811::dma2;
 DMAChannel OctoWS2811::dma3;
+DMAChannel OctoWS2811::dma1B;
+DMAChannel OctoWS2811::dma2B;
+DMAChannel OctoWS2811::dma3B;
 
 static uint16_t ones = 0xFFFF;
+static uint8_t one = 0xFF;
 static volatile uint8_t update_in_progress = 0;
 static uint32_t update_completed_at = 0;
 
@@ -227,10 +231,10 @@ void OctoWS2811::begin(void)
 #endif
 
 	// DMA channel #1 sets WS2811 high at the beginning of each cycle
-	dma1.source(ones);
-	dma1.destination(GPIOC_PSOR);
-	dma1.transferSize(2);
-	dma1.transferCount(bufsize);
+	dma1.source(one);
+	dma1.destination(*(volatile uint32_t *)0x400FF084);//GPIOC_PSOR);
+	dma1.transferSize(1);
+	dma1.transferCount(bufsize/2);
 	dma1.disableOnCompletion();
 
 	// DMA channel #2 writes the pixel data at 23% of the cycle
