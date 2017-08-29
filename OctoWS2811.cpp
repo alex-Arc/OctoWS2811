@@ -98,7 +98,11 @@ void OctoWS2811::begin(void)
   }
 
   ledBitsOneLess = ledBits-1;
-	bufsize = stripLen*ledBits;
+  #if defined(__MK20DX128__)
+  bufsize = stripLen*ledBits;
+  #else
+	bufsize = stripLen*ledBits*2;
+  #endif
 
 	// set up the buffers
 	memset(frameBuffer, 0, bufsize);
@@ -415,7 +419,7 @@ void OctoWS2811::show(void)
 	dma1.transferCount(bufsize);
 	dma2.transferCount(bufsize);
 	dma3.transferCount(bufsize);
-	dma2.sourceBuffer((uint16_t *)frameBuffer, bufsize);
+	dma2.sourceBuffer((uint8_t *)frameBuffer, bufsize);
 	// clear any pending event flags
 	FTM2_SC = FTM_SC_TOF;
 	FTM2_C0SC = FTM_CSC_CHF | FTM_CSC_MSB | FTM_CSC_ELSB | FTM_CSC_DMA;
@@ -461,7 +465,7 @@ void OctoWS2811::setPixel(uint32_t num, int color)
 	// Note: strips 12-15 don't exist (yet?)
 	offset = num % stripLen;
 	bit = (1<<strip);
-	p = ((uint8_t *)drawBuffer) + offset * ledBits * 2;
+	p = ((uint16_t *)drawBuffer) + offset * ledBits;
 	for (mask = (1<<ledBitsOneLess) ; mask ; mask >>= 1) {
 		if (color & mask) {
 			*p++ |= bit;
@@ -480,7 +484,7 @@ int OctoWS2811::getPixel(uint32_t num)
 	strip = num / stripLen;
 	offset = num % stripLen;
 	bit = (1<<strip);
-	p = ((uint8_t *)drawBuffer) + offset * ledBits * 2;
+	p = ((uint16_t *)drawBuffer) + offset * ledBits;
 	for (mask = (1<<ledBitsOneLess) ; mask ; mask >>= 1) {
 		if (*p++ & bit) color |= mask;
 	}
