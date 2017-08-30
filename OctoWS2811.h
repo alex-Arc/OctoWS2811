@@ -87,6 +87,7 @@ private:
   static uint8_t ledBitsOneLess;
 	static void *frameBuffer;
 	static void *drawBuffer;
+  static uint32_t bufsize;
 	static uint8_t params;
 	static DMAChannel dma1, dma2, dma3, dma1B, dma2B, dma3B;
 	static void isr(void);

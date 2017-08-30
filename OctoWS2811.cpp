@@ -32,6 +32,7 @@ uint8_t OctoWS2811::ledBits;
 uint8_t OctoWS2811::ledBitsOneLess;
 void * OctoWS2811::frameBuffer;
 void * OctoWS2811::drawBuffer;
+uint32_t OctoWS2811::bufsize;
 uint8_t OctoWS2811::params;
 DMAChannel OctoWS2811::dma1;
 DMAChannel OctoWS2811::dma2;
@@ -76,7 +77,7 @@ OctoWS2811::OctoWS2811(uint32_t numPerStrip, void *frameBuf, void *drawBuf, uint
 
 void OctoWS2811::begin(void)
 {
-  uint32_t bufsize, frequency;
+  uint32_t frequency;
   // create the two waveforms for WS2811 low and high bits
 	switch (params & 0xF0) {
 	case WS2811_400kHz:
