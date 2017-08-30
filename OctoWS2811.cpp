@@ -359,7 +359,7 @@ void OctoWS2811::show(void)
 	if (drawBuffer != frameBuffer) {
 		// TODO: this could be faster with DMA, especially if the
 		// buffers are 32 bit aligned... but does it matter?
-		memcpy(frameBuffer, drawBuffer, stripLen * ledBits * 2);
+		memcpy(frameBuffer, drawBuffer, bufsize);
 	}
 	// wait for WS2811 reset
 	while (micros() - update_completed_at < 300) ;
@@ -507,8 +507,9 @@ void OctoWS2811::show(void)
 
 void OctoWS2811::setPixel(uint32_t num, int color)
 {
-	uint32_t strip, offset, mask;
-	uint16_t bit, *p;
+	uint32_t strip, mask;
+  uint32_t offset = 0;
+	uint8_t bit, *p;
 
 	switch (params & 7) {
 	  case WS2811_RBG:
@@ -530,10 +531,15 @@ void OctoWS2811::setPixel(uint32_t num, int color)
 		break;
 	}
 	strip = num / stripLen;  // Cortex-M4 has 2 cycle unsigned divide :-)
+  if (strip > 7) {
+    strip -= 8;
+    offset = stripLen * ledBits;
+  }
+
 	// Note: strips 12-15 don't exist (yet?)
-	offset = num % stripLen;
+	offset += (num % stripLen) * ledBits;
 	bit = (1<<strip);
-	p = ((uint16_t *)drawBuffer) + offset * ledBits;
+	p = ((uint8_t *)drawBuffer) + offset;
 	for (mask = (1<<ledBitsOneLess) ; mask ; mask >>= 1) {
 		if (color & mask) {
 			*p++ |= bit;
