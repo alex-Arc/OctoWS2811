@@ -70,7 +70,7 @@ public:
     #if defined(__MK20DX128__)
 		return stripLen * 8;
     #else
-    return stripLen * 12;
+    return stripLen * 16;
     #endif
 	}
 	int color(uint8_t red, uint8_t green, uint8_t blue) {
