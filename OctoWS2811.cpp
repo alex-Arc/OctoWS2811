@@ -206,9 +206,11 @@ void OctoWS2811::begin(void)
 	//CORE_PIN25_CONFIG = PORT_PCR_MUX(3); // testing only
 
 #elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
+
+  uint32_t mod = (F_BUS + frequency / 2) / frequency;
+
 	FTM2_SC = 0;
 	FTM2_CNT = 0;
-	uint32_t mod = (F_BUS + frequency / 2) / frequency;
 	FTM2_MOD = mod - 1;
 	FTM2_SC = FTM_SC_CLKS(1) | FTM_SC_PS(0);
 	FTM2_C0SC = 0x69;
@@ -217,6 +219,17 @@ void OctoWS2811::begin(void)
 	FTM2_C1V = (mod * WS2811_TIMING_T1H) >> 8;
 	// FTM2_CH0, PTA10 (not connected), triggers DMA(port A) on rising edge
 	PORTA_PCR10 = PORT_PCR_IRQC(1)|PORT_PCR_MUX(3);
+
+  FTM1_SC = 0;
+	FTM1_CNT = 0;
+	FTM1_MOD = mod - 1;
+	FTM1_SC = FTM_SC_CLKS(1) | FTM_SC_PS(0);
+	FTM1_C0SC = 0x69;
+	FTM1_C1SC = 0x69;
+	FTM1_C0V = (mod * WS2811_TIMING_T0H) >> 8;
+	FTM1_C1V = (mod * WS2811_TIMING_T1H) >> 8;
+  // FTM1_CH0, PTB0, triggers DMA(port B) on rising edge
+	PORTB_PCR0 = PORT_PCR_IRQC(1)|PORT_PCR_MUX(3);
 
 #elif defined(__MKL26Z64__)
 	FTM2_SC = 0;
