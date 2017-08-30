@@ -33,6 +33,9 @@
 #ifdef __AVR__
 #error "OctoWS2811 does not work with Teensy 2.0 or Teensy++ 2.0."
 #endif
+#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+#else
+#error "OctoWS2811 with 16 outs has only benne tested on Teensy 3.6"
 
 #define WS2811_RGB	0	// The WS2811 datasheet documents this way
 #define WS2811_RBG	1

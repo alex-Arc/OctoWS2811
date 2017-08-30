@@ -1,5 +1,7 @@
 OctoWS2811
 ==========
+## !!warning WIP!!
+this code has only been tested on a Teensy 3.6 and to a very small degree
 
 Control thousands of WS2811/2812 LEDs at video refresh speeds
 
