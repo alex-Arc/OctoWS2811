@@ -251,20 +251,40 @@ void OctoWS2811::begin(void)
 	dma1.transferCount(bufsize/2);
 	dma1.disableOnCompletion();
 
+  dma1B.source(one);
+	dma1B.destination(*(volatile uint32_t *)0x400FF085);
+	dma1B.transferSize(1);
+	dma1B.transferCount(bufsize/2);
+	dma1B.disableOnCompletion();
+
 	// DMA channel #2 writes the pixel data at 23% of the cycle
-	dma2.sourceBuffer((volatile const uint16_t *)frameBuffer, bufsize*2);
-	dma2.destination(GPIOC_PDOR);
-	dma2.transferSize(2);
-	dma2.transferCount(bufsize);
+	dma2.sourceBuffer((volatile const uint8_t *)frameBuffer, bufsize/2);
+	dma2.destination(*(volatile uint32_t *)0x400FF080); //GPIOC_PDOR
+	dma2.transferSize(1);
+	dma2.transferCount(bufsize/2);
 	dma2.disableOnCompletion();
 
+  dma2B.sourceBuffer(((volatile const uint8_t *)frameBuffer) + (bufsize/2), bufsize/2);
+	dma2B.destination(*(volatile uint32_t *)0x400FF081);
+	dma2B.transferSize(1);
+	dma2B.transferCount(bufsize/2);
+	dma2B.disableOnCompletion();
+
+
 	// DMA channel #3 clear all the pins low at 69% of the cycle
-	dma3.source(ones);
-	dma3.destination(GPIOC_PCOR);
-	dma3.transferSize(2);
-	dma3.transferCount(bufsize);
+	dma3.source(one);
+	dma3.destination(*(volatile uint32_t *)0x400FF088);
+	dma3.transferSize(1);
+	dma3.transferCount(bufsize/2);
 	dma3.disableOnCompletion();
 	dma3.interruptAtCompletion();
+
+  dma3B.source(one);
+	dma3B.destination(*(volatile uint32_t *)0x400FF089);
+	dma3B.transferSize(1);
+	dma3B.transferCount(bufsize/2);
+	dma3B.disableOnCompletion();
+	// dma3B.interruptAtCompletion();
 
 #if defined(__MK20DX128__)
 	// route the edge detect interrupts to trigger the 3 channels
@@ -281,9 +301,16 @@ void OctoWS2811::begin(void)
 #elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
 	// route the edge detect interrupts to trigger the 3 channels
 	dma1.triggerAtHardwareEvent(DMAMUX_SOURCE_PORTA);
+  dma1B.triggerAtHardwareEvent(DMAMUX_SOURCE_PORTB);
 	dma2.triggerAtHardwareEvent(DMAMUX_SOURCE_FTM2_CH0);
-	dma3.triggerAtHardwareEvent(DMAMUX_SOURCE_FTM2_CH1);
+  dma2B.triggerAtHardwareEvent(DMAMUX_SOURCE_FTM1_CH0);
+  dma3.triggerAtHardwareEvent(DMAMUX_SOURCE_FTM2_CH1);
+  dma3B.triggerAtHardwareEvent(DMAMUX_SOURCE_FTM1_CH1);
 	DMAPriorityOrder(dma3, dma2, dma1);
+  DMAPriorityOrder(dma3B, dma2B, dma1B);
+  // DMAPriorityOrder(dma1, dma1B);
+  // DMAPriorityOrder(dma2, dma2B);
+  // DMAPriorityOrder(dma3, dma3B);
 #elif defined(__MKL26Z64__)
 	// route the timer interrupts to trigger the 3 channels
 	dma1.triggerAtHardwareEvent(DMAMUX_SOURCE_TPM2_CH0);
@@ -418,6 +445,29 @@ void OctoWS2811::show(void)
 	dma2.enable();           // enable all 3 DMA channels
 	dma3.enable();
 	FTM2_SC = FTM_SC_CLKS(1) | FTM_SC_PS(0); // restart FTM2 timer
+	//digitalWriteFast(9, LOW);
+
+  cv = FTM1_C0V;
+  noInterrupts();
+  // CAUTION: this code is timing critical.
+  while (FTM1_CNT <= cv) ;
+  while (FTM1_CNT > cv) ; // wait for beginning of an 800 kHz cycle
+  while (FTM1_CNT < cv) ;
+  FTM1_SC = 0;             // stop FTM2 timer (hopefully before it rolls over)
+  FTM1_CNT = 0;
+  update_in_progress = 1;
+  //digitalWriteFast(9, HIGH); // oscilloscope trigger
+  PORTB_ISFR = 1;    // clear any prior rising edge
+  FTM1_C0SC = 0x28;
+  tmp = FTM1_C0SC;         // clear any prior timer DMA triggers
+  FTM1_C0SC = 0x69;
+  FTM1_C1SC = 0x28;
+  tmp = FTM1_C1SC;
+  FTM1_C1SC = 0x69;
+  dma1B.enable();
+  dma2B.enable();
+  dma3B.enable();
+  FTM1_SC = FTM_SC_CLKS(1) | FTM_SC_PS(0); // restart FTM2 timer
 	//digitalWriteFast(9, LOW);
 
 #elif defined(__MKL26Z64__)
