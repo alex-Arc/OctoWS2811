@@ -32,12 +32,17 @@ uint8_t OctoWS2811::ledBits;
 uint8_t OctoWS2811::ledBitsOneLess;
 void * OctoWS2811::frameBuffer;
 void * OctoWS2811::drawBuffer;
+uint32_t OctoWS2811::bufsize;
 uint8_t OctoWS2811::params;
 DMAChannel OctoWS2811::dma1;
 DMAChannel OctoWS2811::dma2;
 DMAChannel OctoWS2811::dma3;
+DMAChannel OctoWS2811::dma1B;
+DMAChannel OctoWS2811::dma2B;
+DMAChannel OctoWS2811::dma3B;
 
 static uint16_t ones = 0xFFFF;
+static uint8_t one = 0xFF;
 static volatile uint8_t update_in_progress = 0;
 static uint32_t update_completed_at = 0;
 
@@ -72,7 +77,7 @@ OctoWS2811::OctoWS2811(uint32_t numPerStrip, void *frameBuf, void *drawBuf, uint
 
 void OctoWS2811::begin(void)
 {
-  uint32_t bufsize, frequency;
+  uint32_t frequency;
   // create the two waveforms for WS2811 low and high bits
 	switch (params & 0xF0) {
 	case WS2811_400kHz:
@@ -144,7 +149,7 @@ void OctoWS2811::begin(void)
 
 #elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
 	// Teensy 3.5/3.6
-	GPIOC_PCOR = 0xFFFF;
+	GPIOC_PCOR = 0xFF;
 	pinMode(15, OUTPUT);	// PTC0
 	pinMode(22, OUTPUT);	// PTC1
 	pinMode(23, OUTPUT);	// PTC2
@@ -153,10 +158,21 @@ void OctoWS2811::begin(void)
 	pinMode(13, OUTPUT);	// PTC5
 	pinMode(11, OUTPUT);	// PTC6
 	pinMode(12, OUTPUT);	// PTC7
-	pinMode(35, OUTPUT);	// PTC8
-	pinMode(36, OUTPUT);	// PTC9
-	pinMode(37, OUTPUT);	// PTC10
-	pinMode(38, OUTPUT);	// PTC11
+
+  GPIOD_PCOR = 0xFF;
+  pinMode(2, OUTPUT);	// strip #1
+  pinMode(14, OUTPUT);	// strip #2
+  pinMode(7, OUTPUT);	// strip #3
+  pinMode(8, OUTPUT);	// strip #4
+  pinMode(6, OUTPUT);	// strip #5
+  pinMode(20, OUTPUT);	// strip #6
+  pinMode(21, OUTPUT);	// strip #7
+  pinMode(5, OUTPUT);	// strip #8
+
+	// pinMode(35, OUTPUT);	// PTC8
+	// pinMode(36, OUTPUT);	// PTC9
+	// pinMode(37, OUTPUT);	// PTC10
+	// pinMode(38, OUTPUT);	// PTC11
 
 	// Alternatively, you could also get a total of 15 on GPIOD:
 	/*
@@ -201,9 +217,11 @@ void OctoWS2811::begin(void)
 	//CORE_PIN25_CONFIG = PORT_PCR_MUX(3); // testing only
 
 #elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
+
+  uint32_t mod = (F_BUS + frequency / 2) / frequency;
+
 	FTM2_SC = 0;
 	FTM2_CNT = 0;
-	uint32_t mod = (F_BUS + frequency / 2) / frequency;
 	FTM2_MOD = mod - 1;
 	FTM2_SC = FTM_SC_CLKS(1) | FTM_SC_PS(0);
 	FTM2_C0SC = 0x69;
@@ -212,6 +230,17 @@ void OctoWS2811::begin(void)
 	FTM2_C1V = (mod * WS2811_TIMING_T1H) >> 8;
 	// FTM2_CH0, PTA10 (not connected), triggers DMA(port A) on rising edge
 	PORTA_PCR10 = PORT_PCR_IRQC(1)|PORT_PCR_MUX(3);
+
+  FTM1_SC = 0;
+	FTM1_CNT = 0;
+	FTM1_MOD = mod - 1;
+	FTM1_SC = FTM_SC_CLKS(1) | FTM_SC_PS(0);
+	FTM1_C0SC = 0x69;
+	FTM1_C1SC = 0x69;
+	FTM1_C0V = (mod * WS2811_TIMING_T0H) >> 8;
+	FTM1_C1V = (mod * WS2811_TIMING_T1H) >> 8;
+  // FTM1_CH0, PTB0, triggers DMA(port B) on rising edge
+	PORTB_PCR0 = PORT_PCR_IRQC(1)|PORT_PCR_MUX(3);
 
 #elif defined(__MKL26Z64__)
 	FTM2_SC = 0;
@@ -227,26 +256,46 @@ void OctoWS2811::begin(void)
 #endif
 
 	// DMA channel #1 sets WS2811 high at the beginning of each cycle
-	dma1.source(ones);
-	dma1.destination(GPIOC_PSOR);
-	dma1.transferSize(2);
-	dma1.transferCount(bufsize);
+	dma1.source(one);
+	dma1.destination(GPIOC_PSOR);//GPIOC_PSOR);
+	dma1.transferSize(1);
+	dma1.transferCount(bufsize/2);
 	dma1.disableOnCompletion();
 
+  dma1B.source(one);
+	dma1B.destination(GPIOD_PSOR);
+	dma1B.transferSize(1);
+	dma1B.transferCount(bufsize/2);
+	dma1B.disableOnCompletion();
+
 	// DMA channel #2 writes the pixel data at 23% of the cycle
-	dma2.sourceBuffer((volatile const uint16_t *)frameBuffer, bufsize*2);
-	dma2.destination(GPIOC_PDOR);
-	dma2.transferSize(2);
-	dma2.transferCount(bufsize);
+	dma2.sourceBuffer((volatile const uint8_t *)frameBuffer, bufsize/2);
+	dma2.destination(GPIOC_PDOR); //GPIOC_PDOR
+	dma2.transferSize(1);
+	dma2.transferCount(bufsize/2);
 	dma2.disableOnCompletion();
 
+  dma2B.sourceBuffer(((volatile const uint8_t *)frameBuffer) + (bufsize/2), bufsize/2);
+	dma2B.destination(GPIOD_PDOR);
+	dma2B.transferSize(1);
+	dma2B.transferCount(bufsize/2);
+	dma2B.disableOnCompletion();
+
+
 	// DMA channel #3 clear all the pins low at 69% of the cycle
-	dma3.source(ones);
+	dma3.source(one);
 	dma3.destination(GPIOC_PCOR);
-	dma3.transferSize(2);
-	dma3.transferCount(bufsize);
+	dma3.transferSize(1);
+	dma3.transferCount(bufsize/2);
 	dma3.disableOnCompletion();
 	dma3.interruptAtCompletion();
+
+  dma3B.source(one);
+	dma3B.destination(GPIOD_PCOR);
+	dma3B.transferSize(1);
+	dma3B.transferCount(bufsize/2);
+	dma3B.disableOnCompletion();
+	// dma3B.interruptAtCompletion();
 
 #if defined(__MK20DX128__)
 	// route the edge detect interrupts to trigger the 3 channels
@@ -263,9 +312,16 @@ void OctoWS2811::begin(void)
 #elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
 	// route the edge detect interrupts to trigger the 3 channels
 	dma1.triggerAtHardwareEvent(DMAMUX_SOURCE_PORTA);
+  dma1B.triggerAtHardwareEvent(DMAMUX_SOURCE_PORTB);
 	dma2.triggerAtHardwareEvent(DMAMUX_SOURCE_FTM2_CH0);
-	dma3.triggerAtHardwareEvent(DMAMUX_SOURCE_FTM2_CH1);
+  dma2B.triggerAtHardwareEvent(DMAMUX_SOURCE_FTM1_CH0);
+  dma3.triggerAtHardwareEvent(DMAMUX_SOURCE_FTM2_CH1);
+  dma3B.triggerAtHardwareEvent(DMAMUX_SOURCE_FTM1_CH1);
 	DMAPriorityOrder(dma3, dma2, dma1);
+  DMAPriorityOrder(dma3B, dma2B, dma1B);
+  // DMAPriorityOrder(dma1, dma1B);
+  // DMAPriorityOrder(dma2, dma2B);
+  // DMAPriorityOrder(dma3, dma3B);
 #elif defined(__MKL26Z64__)
 	// route the timer interrupts to trigger the 3 channels
 	dma1.triggerAtHardwareEvent(DMAMUX_SOURCE_TPM2_CH0);
@@ -314,7 +370,7 @@ void OctoWS2811::show(void)
 	if (drawBuffer != frameBuffer) {
 		// TODO: this could be faster with DMA, especially if the
 		// buffers are 32 bit aligned... but does it matter?
-		memcpy(frameBuffer, drawBuffer, stripLen * ledBits * 2);
+		memcpy(frameBuffer, drawBuffer, bufsize);
 	}
 	// wait for WS2811 reset
 	while (micros() - update_completed_at < 300) ;
@@ -402,6 +458,29 @@ void OctoWS2811::show(void)
 	FTM2_SC = FTM_SC_CLKS(1) | FTM_SC_PS(0); // restart FTM2 timer
 	//digitalWriteFast(9, LOW);
 
+  cv = FTM1_C0V;
+  noInterrupts();
+  // CAUTION: this code is timing critical.
+  while (FTM1_CNT <= cv) ;
+  while (FTM1_CNT > cv) ; // wait for beginning of an 800 kHz cycle
+  while (FTM1_CNT < cv) ;
+  FTM1_SC = 0;             // stop FTM2 timer (hopefully before it rolls over)
+  FTM1_CNT = 0;
+  update_in_progress = 1;
+  //digitalWriteFast(9, HIGH); // oscilloscope trigger
+  PORTB_ISFR = 1;    // clear any prior rising edge
+  FTM1_C0SC = 0x28;
+  tmp = FTM1_C0SC;         // clear any prior timer DMA triggers
+  FTM1_C0SC = 0x69;
+  FTM1_C1SC = 0x28;
+  tmp = FTM1_C1SC;
+  FTM1_C1SC = 0x69;
+  dma1B.enable();
+  dma2B.enable();
+  dma3B.enable();
+  FTM1_SC = FTM_SC_CLKS(1) | FTM_SC_PS(0); // restart FTM2 timer
+	//digitalWriteFast(9, LOW);
+
 #elif defined(__MKL26Z64__)
 	uint32_t sc __attribute__((unused)) = FTM2_SC;
 	uint32_t cv = FTM2_C1V;
@@ -439,8 +518,9 @@ void OctoWS2811::show(void)
 
 void OctoWS2811::setPixel(uint32_t num, int color)
 {
-	uint32_t strip, offset, mask;
-	uint16_t bit, *p;
+	uint32_t strip, mask;
+  uint32_t offset = 0;
+	uint8_t bit, *p;
 
 	switch (params & 7) {
 	  case WS2811_RBG:
@@ -462,10 +542,15 @@ void OctoWS2811::setPixel(uint32_t num, int color)
 		break;
 	}
 	strip = num / stripLen;  // Cortex-M4 has 2 cycle unsigned divide :-)
+  if (strip > 7) {
+    strip -= 8;
+    offset = stripLen * ledBits;
+  }
+
 	// Note: strips 12-15 don't exist (yet?)
-	offset = num % stripLen;
+	offset += (num % stripLen) * ledBits;
 	bit = (1<<strip);
-	p = ((uint16_t *)drawBuffer) + offset * ledBits;
+	p = ((uint8_t *)drawBuffer) + offset;
 	for (mask = (1<<ledBitsOneLess) ; mask ; mask >>= 1) {
 		if (color & mask) {
 			*p++ |= bit;

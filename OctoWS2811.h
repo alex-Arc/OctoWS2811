@@ -70,7 +70,7 @@ public:
     #if defined(__MK20DX128__)
 		return stripLen * 8;
     #else
-    return stripLen * 12;
+    return stripLen * 16;
     #endif
 	}
 	int color(uint8_t red, uint8_t green, uint8_t blue) {
@@ -87,8 +87,9 @@ private:
   static uint8_t ledBitsOneLess;
 	static void *frameBuffer;
 	static void *drawBuffer;
+  static uint32_t bufsize;
 	static uint8_t params;
-	static DMAChannel dma1, dma2, dma3;
+	static DMAChannel dma1, dma2, dma3, dma1B, dma2B, dma3B;
 	static void isr(void);
 };
 
