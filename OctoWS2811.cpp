@@ -149,7 +149,7 @@ void OctoWS2811::begin(void)
 
 #elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
 	// Teensy 3.5/3.6
-	GPIOC_PCOR = 0xFFFF;
+	GPIOC_PCOR = 0xFF;
 	pinMode(15, OUTPUT);	// PTC0
 	pinMode(22, OUTPUT);	// PTC1
 	pinMode(23, OUTPUT);	// PTC2
@@ -158,10 +158,21 @@ void OctoWS2811::begin(void)
 	pinMode(13, OUTPUT);	// PTC5
 	pinMode(11, OUTPUT);	// PTC6
 	pinMode(12, OUTPUT);	// PTC7
-	pinMode(35, OUTPUT);	// PTC8
-	pinMode(36, OUTPUT);	// PTC9
-	pinMode(37, OUTPUT);	// PTC10
-	pinMode(38, OUTPUT);	// PTC11
+
+  GPIOD_PCOR = 0xFF;
+  pinMode(2, OUTPUT);	// strip #1
+  pinMode(14, OUTPUT);	// strip #2
+  pinMode(7, OUTPUT);	// strip #3
+  pinMode(8, OUTPUT);	// strip #4
+  pinMode(6, OUTPUT);	// strip #5
+  pinMode(20, OUTPUT);	// strip #6
+  pinMode(21, OUTPUT);	// strip #7
+  pinMode(5, OUTPUT);	// strip #8
+
+	// pinMode(35, OUTPUT);	// PTC8
+	// pinMode(36, OUTPUT);	// PTC9
+	// pinMode(37, OUTPUT);	// PTC10
+	// pinMode(38, OUTPUT);	// PTC11
 
 	// Alternatively, you could also get a total of 15 on GPIOD:
 	/*
@@ -246,26 +257,26 @@ void OctoWS2811::begin(void)
 
 	// DMA channel #1 sets WS2811 high at the beginning of each cycle
 	dma1.source(one);
-	dma1.destination(*(volatile uint32_t *)0x400FF084);//GPIOC_PSOR);
+	dma1.destination(GPIOC_PSOR);//GPIOC_PSOR);
 	dma1.transferSize(1);
 	dma1.transferCount(bufsize/2);
 	dma1.disableOnCompletion();
 
   dma1B.source(one);
-	dma1B.destination(*(volatile uint32_t *)0x400FF085);
+	dma1B.destination(GPIOD_PSOR);
 	dma1B.transferSize(1);
 	dma1B.transferCount(bufsize/2);
 	dma1B.disableOnCompletion();
 
 	// DMA channel #2 writes the pixel data at 23% of the cycle
 	dma2.sourceBuffer((volatile const uint8_t *)frameBuffer, bufsize/2);
-	dma2.destination(*(volatile uint32_t *)0x400FF080); //GPIOC_PDOR
+	dma2.destination(GPIOC_PDOR); //GPIOC_PDOR
 	dma2.transferSize(1);
 	dma2.transferCount(bufsize/2);
 	dma2.disableOnCompletion();
 
   dma2B.sourceBuffer(((volatile const uint8_t *)frameBuffer) + (bufsize/2), bufsize/2);
-	dma2B.destination(*(volatile uint32_t *)0x400FF081);
+	dma2B.destination(GPIOD_PDOR);
 	dma2B.transferSize(1);
 	dma2B.transferCount(bufsize/2);
 	dma2B.disableOnCompletion();
@@ -273,14 +284,14 @@ void OctoWS2811::begin(void)
 
 	// DMA channel #3 clear all the pins low at 69% of the cycle
 	dma3.source(one);
-	dma3.destination(*(volatile uint32_t *)0x400FF088);
+	dma3.destination(GPIOC_PCOR);
 	dma3.transferSize(1);
 	dma3.transferCount(bufsize/2);
 	dma3.disableOnCompletion();
 	dma3.interruptAtCompletion();
 
   dma3B.source(one);
-	dma3B.destination(*(volatile uint32_t *)0x400FF089);
+	dma3B.destination(GPIOD_PCOR);
 	dma3B.transferSize(1);
 	dma3B.transferCount(bufsize/2);
 	dma3B.disableOnCompletion();
