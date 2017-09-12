@@ -37,7 +37,7 @@ DMAChannel OctoWS2811::dma1;
 DMAChannel OctoWS2811::dma2;
 DMAChannel OctoWS2811::dma3;
 
-static uint8_t ones = 0xFF;
+static uint8_t ones[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 static volatile uint8_t update_in_progress = 0;
 static uint32_t update_completed_at = 0;
 
@@ -98,7 +98,7 @@ void OctoWS2811::begin(void)
   }
 
   ledBitsOneLess = ledBits-1;
-	bufsize = stripLen*ledBits;
+	bufsize = 512;
 
 	// set up the buffers
 	memset(frameBuffer, 0, bufsize);
@@ -109,6 +109,16 @@ void OctoWS2811::begin(void)
 	}
 
 	// configure the 8 output pins
+  GPIOC_PCOR = 0xFF;
+	pinMode(15, OUTPUT);	// strip #1
+	pinMode(22, OUTPUT);	// strip #2
+	pinMode(23, OUTPUT);	// strip #3
+	pinMode(9, OUTPUT);	// strip #4
+	pinMode(10, OUTPUT);	// strip #5
+	pinMode(13, OUTPUT);	// strip #6
+	pinMode(11, OUTPUT);	// strip #7
+	pinMode(12, OUTPUT);	// strip #8
+
 	GPIOD_PCOR = 0xFF;
 	pinMode(2, OUTPUT);	// strip #1
 	pinMode(14, OUTPUT);	// strip #2
@@ -175,25 +185,57 @@ void OctoWS2811::begin(void)
 
 #endif
 
+  #define PORT_DELTA ( (uint32_t)&GPIOD_PDOR - (uint32_t)&GPIOC_PDOR )
+
 	// DMA channel #1 sets WS2811 high at the beginning of each cycle
-	dma1.source(ones);
-	dma1.destination(GPIOD_PSOR);
-	dma1.transferSize(1);
-	dma1.transferCount(bufsize);
+	dma1.TCD->SADDR = ones;
+	dma1.TCD->SOFF = 1;
+  dma1.TCD->ATTR_SRC = (2 << 3) | 0;
+  dma1.TCD->SLAST = 0;
+
+  dma1.TCD->DADDR = &GPIOC_PSOR;
+  dma1.TCD->DOFF = PORT_DELTA;
+  dma1.TCD->ATTR_DST = ((31 - __builtin_clz(PORT_DELTA*2)) << 3) | 0;
+
+  dma1.TCD->NBYTES = 2;
+  dma1.TCD->DLASTSGA = 0;
+	dma1.TCD->BITER = bufsize/2;
+	dma1.TCD->CITER = bufsize/2;
 	dma1.disableOnCompletion();
 
 	// DMA channel #2 writes the pixel data at 23% of the cycle
-	dma2.sourceBuffer((uint8_t *)frameBuffer, bufsize);
-	dma2.destination(GPIOD_PDOR);
-	dma2.transferSize(1);
-	dma2.transferCount(bufsize);
-	dma2.disableOnCompletion();
+
+  dma2.TCD->SADDR = frameBuffer;
+	dma2.TCD->SOFF = 1;
+	dma2.TCD->ATTR_SRC = 0; //DMA_TCD_ATTR_SIZE_8BIT;
+	dma2.TCD->SLAST = -bufsize;
+
+  dma2.TCD->DADDR = &GPIOC_PDOR;
+  dma2.TCD->DOFF = PORT_DELTA;
+   /* loop GPIOC_PDOR, GPIOD_PDOR and back */
+  dma2.TCD->ATTR_DST = ((31 - __builtin_clz(PORT_DELTA*2)) << 3) | DMA_TCD_ATTR_SIZE_8BIT;
+  dma2.TCD->DLASTSGA = 0;
+
+  dma2.TCD->NBYTES = 2;// | DMA_TCD_NBYTES_SMLOE;
+  dma2.TCD->BITER = bufsize/2;
+  dma2.TCD->CITER = bufsize/2;
+
+  dma2.disableOnCompletion();
 
 	// DMA channel #3 clear all the pins low at 69% of the cycle
-	dma3.source(ones);
-	dma3.destination(GPIOD_PCOR);
-	dma3.transferSize(1);
-	dma3.transferCount(bufsize);
+  dma3.TCD->SADDR = ones;
+  dma3.TCD->SOFF = 1;
+  dma3.TCD->ATTR_SRC = (2 << 3) | 0;
+  dma3.TCD->SLAST = 0;
+
+  dma3.TCD->DADDR = &GPIOC_PCOR;
+  dma3.TCD->DOFF = PORT_DELTA;
+  dma3.TCD->ATTR_DST = ((31 - __builtin_clz(PORT_DELTA*2)) << 3) | 0;
+
+  dma3.TCD->NBYTES = 2;
+  dma3.TCD->DLASTSGA = 0;
+	dma3.TCD->BITER = bufsize/2;
+	dma3.TCD->CITER = bufsize/2;
 	dma3.disableOnCompletion();
 	dma3.interruptAtCompletion();
 
@@ -224,7 +266,7 @@ void OctoWS2811::begin(void)
 
 	// enable a done interrupts when channel #3 completes
 	dma3.attachInterrupt(isr);
-	//pinMode(9, OUTPUT); // testing: oscilloscope trigger
+	pinMode(0, OUTPUT); // testing: oscilloscope trigger
 }
 
 void OctoWS2811::isr(void)
@@ -334,7 +376,7 @@ void OctoWS2811::show(void)
 	while (FTM2_CNT < cv) ;
 	FTM2_SC = 0;             // stop FTM2 timer (hopefully before it rolls over)
 	update_in_progress = 1;
-	//digitalWriteFast(9, HIGH); // oscilloscope trigger
+	digitalWriteFast(0, HIGH); // oscilloscope trigger
 	PORTA_ISFR = (1<<10);    // clear any prior rising edge
 	uint32_t tmp __attribute__((unused));
 	FTM2_C0SC = 0x28;
@@ -347,7 +389,7 @@ void OctoWS2811::show(void)
 	dma2.enable();           // enable all 3 DMA channels
 	dma3.enable();
 	FTM2_SC = FTM_SC_CLKS(1) | FTM_SC_PS(0); // restart FTM2 timer
-	//digitalWriteFast(9, LOW);
+	digitalWriteFast(0, LOW);
 
 #elif defined(__MKL26Z64__)
 	uint32_t sc __attribute__((unused)) = FTM2_SC;
@@ -387,7 +429,7 @@ void OctoWS2811::show(void)
 void OctoWS2811::setPixel(uint32_t num, int color)
 {
 	uint32_t strip, offset, mask;
-	uint8_t bit, *p;
+	uint16_t bit, *p;
 
 	switch (params & 7) {
 	  case WS2811_RBG:
@@ -411,8 +453,8 @@ void OctoWS2811::setPixel(uint32_t num, int color)
 	strip = num / stripLen;  // Cortex-M4 has 2 cycle unsigned divide :-)
 	offset = num % stripLen;
 	bit = (1<<strip);
-	p = ((uint8_t *)drawBuffer) + offset * ledBits;
-	for (mask = (1<<ledBitsOneLess) ; mask ; mask >>= 1) {
+	p = ((uint16_t *)drawBuffer) + offset * 8 * 4;
+	for (mask = (1<<((8*4)-1)) ; mask ; mask >>= 1) {
 		if (color & mask) {
 			*p++ |= bit;
 		} else {

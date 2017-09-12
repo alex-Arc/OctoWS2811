@@ -67,7 +67,7 @@ public:
 	int busy(void);
 
 	int numPixels(void) {
-		return stripLen * 8;
+		return stripLen * 16;
 	}
 	int color(uint8_t red, uint8_t green, uint8_t blue) {
 		return (red << 16) | (green << 8) | blue;
