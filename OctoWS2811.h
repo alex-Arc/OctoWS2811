@@ -80,6 +80,7 @@ public:
 private:
 	static uint16_t stripLen;
   static uint8_t ledBits;
+  static uint8_t ledBytes;
   static uint8_t ledBitsOneLess;
 	static void *frameBuffer;
 	static void *drawBuffer;

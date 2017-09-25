@@ -29,6 +29,7 @@
 
 uint16_t OctoWS2811::stripLen;
 uint8_t OctoWS2811::ledBits;
+uint8_t OctoWS2811::ledBytes;
 uint8_t OctoWS2811::ledBitsOneLess;
 void * OctoWS2811::frameBuffer;
 void * OctoWS2811::drawBuffer;
@@ -93,12 +94,14 @@ void OctoWS2811::begin(void)
 
   if((params & 0x0F) > 5) {
     ledBits = 32;
+    ledBytes = 4;
   }else {
     ledBits = 24;
+    ledBytes = 3;
   }
 
   ledBitsOneLess = ledBits-1;
-	bufsize = 512;
+	bufsize = ledBytes*stripLen*16;
 
 	// set up the buffers
 	memset(frameBuffer, 0, bufsize);
