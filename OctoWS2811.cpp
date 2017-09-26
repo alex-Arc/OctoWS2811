@@ -39,6 +39,7 @@ DMAChannel OctoWS2811::dma2;
 DMAChannel OctoWS2811::dma3;
 
 static uint8_t ones[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+static uint8_t one[] = {0xFF};
 static volatile uint8_t update_in_progress = 0;
 static uint32_t update_completed_at = 0;
 
@@ -191,9 +192,9 @@ void OctoWS2811::begin(void)
   #define PORT_DELTA ( (uint32_t)&GPIOD_PDOR - (uint32_t)&GPIOC_PDOR )
 
 	// DMA channel #1 sets WS2811 high at the beginning of each cycle
-	dma1.TCD->SADDR = ones;
-	dma1.TCD->SOFF = 1;
-  dma1.TCD->ATTR_SRC = (2 << 3) | 0;
+	dma1.TCD->SADDR = one;
+	dma1.TCD->SOFF = 0;
+  dma1.TCD->ATTR_SRC = 0; //(2 << 3) | 0;
   dma1.TCD->SLAST = 0;
 
   dma1.TCD->DADDR = &GPIOC_PSOR;
@@ -226,9 +227,9 @@ void OctoWS2811::begin(void)
   dma2.disableOnCompletion();
 
 	// DMA channel #3 clear all the pins low at 69% of the cycle
-  dma3.TCD->SADDR = ones;
-  dma3.TCD->SOFF = 1;
-  dma3.TCD->ATTR_SRC = (2 << 3) | 0;
+  dma3.TCD->SADDR = one;
+  dma3.TCD->SOFF = 0;
+  dma3.TCD->ATTR_SRC = DMA_TCD_ATTR_SIZE_8BIT;//(2 << 3) | 0;
   dma3.TCD->SLAST = 0;
 
   dma3.TCD->DADDR = &GPIOC_PCOR;
