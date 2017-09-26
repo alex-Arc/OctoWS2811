@@ -270,7 +270,7 @@ void OctoWS2811::begin(void)
 
 	// enable a done interrupts when channel #3 completes
 	dma3.attachInterrupt(isr);
-	pinMode(0, OUTPUT); // testing: oscilloscope trigger
+	// pinMode(0, OUTPUT); // testing: oscilloscope trigger
 }
 
 void OctoWS2811::isr(void)
