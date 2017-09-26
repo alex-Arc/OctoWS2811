@@ -219,7 +219,7 @@ void OctoWS2811::begin(void)
   dma2.TCD->ATTR_DST = ((31 - __builtin_clz(PORT_DELTA*2)) << 3) | DMA_TCD_ATTR_SIZE_8BIT;
   dma2.TCD->DLASTSGA = 0;
 
-  dma2.TCD->NBYTES = 2;// | DMA_TCD_NBYTES_SMLOE;
+  dma2.TCD->NBYTES = DMA_TCD_NBYTES_MLOFFYES_NBYTES(2);// | DMA_TCD_NBYTES_SMLOE;
   dma2.TCD->BITER = bufsize/2;
   dma2.TCD->CITER = bufsize/2;
 
@@ -307,7 +307,7 @@ void OctoWS2811::show(void)
 	if (drawBuffer != frameBuffer) {
 		// TODO: this could be faster with DMA, especially if the
 		// buffers are 32 bit aligned... but does it matter?
-		memcpy(frameBuffer, drawBuffer, stripLen * ledBits);
+		memcpy(frameBuffer, drawBuffer, stripLen*16*ledBytes);
 	}
 	// wait for WS2811 reset
 	while (micros() - update_completed_at < 300) ;
