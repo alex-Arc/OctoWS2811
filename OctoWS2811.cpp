@@ -380,7 +380,7 @@ void OctoWS2811::show(void)
 	while (FTM2_CNT < cv) ;
 	FTM2_SC = 0;             // stop FTM2 timer (hopefully before it rolls over)
 	update_in_progress = 1;
-	digitalWriteFast(0, HIGH); // oscilloscope trigger
+	// digitalWriteFast(0, HIGH); // oscilloscope trigger
 	PORTA_ISFR = (1<<10);    // clear any prior rising edge
 	uint32_t tmp __attribute__((unused));
 	FTM2_C0SC = 0x28;
@@ -393,7 +393,7 @@ void OctoWS2811::show(void)
 	dma2.enable();           // enable all 3 DMA channels
 	dma3.enable();
 	FTM2_SC = FTM_SC_CLKS(1) | FTM_SC_PS(0); // restart FTM2 timer
-	digitalWriteFast(0, LOW);
+	// digitalWriteFast(0, LOW);
 
 #elif defined(__MKL26Z64__)
 	uint32_t sc __attribute__((unused)) = FTM2_SC;
