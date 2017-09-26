@@ -40,12 +40,12 @@
 
 #include <OctoWS2811.h>
 
-const int ledsPerStrip = 120;
+const int ledsPerStrip = 100;
 
-DMAMEM int displayMemory[ledsPerStrip*6];
-int drawingMemory[ledsPerStrip*6];
+DMAMEM int displayMemory[ledsPerStrip*16];
+int drawingMemory[ledsPerStrip*16];
 
-const int config = WS2811_GRB | WS2811_800kHz;
+const int config = WS2811_RGBW | WS2811_800kHz;
 
 OctoWS2811 leds(ledsPerStrip, displayMemory, drawingMemory, config);
 
@@ -54,13 +54,14 @@ void setup() {
   leds.show();
 }
 
-#define RED    0xFF0000
-#define GREEN  0x00FF00
-#define BLUE   0x0000FF
-#define YELLOW 0xFFFF00
-#define PINK   0xFF1088
-#define ORANGE 0xE05800
-#define WHITE  0xFFFFFF
+#define RED    0xFF000000
+#define GREEN  0x00FF0000
+#define BLUE   0x0000FF00
+#define YELLOW 0xFFFF0055
+#define PINK   0xFF108800
+#define ORANGE 0xE0580055
+#define WHITE  0xFFFFFFFF
+#define BLACK  0x00000000
 
 // Less intense...
 /*
@@ -86,6 +87,7 @@ void loop() {
   colorWipe(PINK, microsec);
   colorWipe(ORANGE, microsec);
   colorWipe(WHITE, microsec);
+  // colorWipe(BLACK, microsec);
 }
 
 void colorWipe(int color, int wait)
