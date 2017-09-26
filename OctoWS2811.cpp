@@ -456,8 +456,8 @@ void OctoWS2811::setPixel(uint32_t num, int color)
 	strip = num / stripLen;  // Cortex-M4 has 2 cycle unsigned divide :-)
 	offset = num % stripLen;
 	bit = (1<<strip);
-	p = ((uint16_t *)drawBuffer) + offset * 8 * 4;
-	for (mask = (1<<((8*4)-1)) ; mask ; mask >>= 1) {
+	p = ((uint16_t *)drawBuffer) + offset * ledBits;
+	for (mask = 1<<ledBitsOneLess; mask ; mask >>= 1) {
 		if (color & mask) {
 			*p++ |= bit;
 		} else {
