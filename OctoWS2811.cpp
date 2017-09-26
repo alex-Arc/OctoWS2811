@@ -199,9 +199,9 @@ void OctoWS2811::begin(void)
 
   dma1.TCD->DADDR = &GPIOC_PSOR;
   dma1.TCD->DOFF = PORT_DELTA;
-  dma1.TCD->ATTR_DST = ((31 - __builtin_clz(PORT_DELTA*2)) << 3) | 0;
+  dma1.TCD->ATTR_DST = ((31 - __builtin_clz(PORT_DELTA*2)) << 3) | DMA_TCD_ATTR_SIZE_8BIT;
 
-  dma1.TCD->NBYTES = 2;
+  dma1.TCD->NBYTES = DMA_TCD_NBYTES_MLOFFYES_NBYTES(2); //DMA_TCD_NBYTES_MLOFFYES_NBYTES(2) | DMA_TCD_NBYTES_MLOFFYES_MLOFF(-PORT_DELTA);
   dma1.TCD->DLASTSGA = 0;
 	dma1.TCD->BITER = bufsize/2;
 	dma1.TCD->CITER = bufsize/2;
@@ -234,7 +234,7 @@ void OctoWS2811::begin(void)
 
   dma3.TCD->DADDR = &GPIOC_PCOR;
   dma3.TCD->DOFF = PORT_DELTA;
-  dma3.TCD->ATTR_DST = ((31 - __builtin_clz(PORT_DELTA*2)) << 3) | 0;
+  dma3.TCD->ATTR_DST = ((31 - __builtin_clz(PORT_DELTA*2)) << 3) | DMA_TCD_ATTR_SIZE_8BIT;
 
   dma3.TCD->NBYTES = 2;
   dma3.TCD->DLASTSGA = 0;
