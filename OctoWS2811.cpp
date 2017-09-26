@@ -38,7 +38,6 @@ DMAChannel OctoWS2811::dma1;
 DMAChannel OctoWS2811::dma2;
 DMAChannel OctoWS2811::dma3;
 
-static uint8_t ones[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 static uint8_t one[] = {0xFF};
 static volatile uint8_t update_in_progress = 0;
 static uint32_t update_completed_at = 0;
